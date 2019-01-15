@@ -1,5 +1,5 @@
-# PyTorchUtils
+# PyTorch Demos
 
-Some common functions when using PyTorch
+Some short PyTorch Implementations
 
-## PyTorch 0.4.0
+## PyTorch 0.4.1
