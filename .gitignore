@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.*.py
+
+# vscode
+.vscode/
+
+# mac os
+.DS_Store
+._DS_Store
+
+# datasets
+metrics/cifar10/
+
+# results
+gan_toy/outputs/
