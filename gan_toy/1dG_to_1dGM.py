@@ -14,10 +14,13 @@ import sklearn
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', default=0, type=int)
+parser.add_argument('--nh', default=64, type=int)
+parser.add_argument('--bs', default=64, type=int)
 args = parser.parse_args()
 
-if not os.path.exists('outputs'):
-    os.makedirs('outputs')
+save_dir = 'outputs/seed{}_nh{}_bs{}'.format(args.seed, args.nh, args.bs)
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
 
 seed = args.seed
 torch.manual_seed(seed)
@@ -25,25 +28,25 @@ np.random.seed(seed)
 print('seed = {}'.format(seed))
 
 # https://github.com/caogang/wgan-gp/blob/master/gan_toy.py
-h_dim = 64
+nh = args.nh
 G = nn.Sequential(
-    nn.Linear(1,h_dim),
+    nn.Linear(1,nh),
     nn.ReLU(True),
-    nn.Linear(h_dim,h_dim),
+    nn.Linear(nh,nh),
     nn.ReLU(True),
-    nn.Linear(h_dim,h_dim),
+    nn.Linear(nh,nh),
     nn.ReLU(True),
-    nn.Linear(h_dim,1),
+    nn.Linear(nh,1),
 )
 
 D = nn.Sequential(
-    nn.Linear(1,h_dim),
+    nn.Linear(1,nh),
     nn.ReLU(True),
-    nn.Linear(h_dim,h_dim),
+    nn.Linear(nh,nh),
     nn.ReLU(True),
-    nn.Linear(h_dim,h_dim),
+    nn.Linear(nh,nh),
     nn.ReLU(True),
-    nn.Linear(h_dim,1),
+    nn.Linear(nh,1),
     nn.Sigmoid()
 )
 
@@ -61,15 +64,15 @@ G.apply(weights_init)
 D.apply(weights_init)
 
 loss_fn = nn.BCELoss()
-optimizerG = torch.optim.Adam(G.parameters())
-optimizerD = torch.optim.Adam(D.parameters())
-batch_size = 4
+optimizerG = torch.optim.Adam(G.parameters(), lr=1e-4, betas=[0, 0.9])
+optimizerD = torch.optim.Adam(D.parameters(), lr=1e-4, betas=[0, 0.9])
+batch_size = args.bs
 
-epochs = 1000
+epochs = 10000
 
 def sample_GM_1d(ws, mus, stds, num_samples):
     """
-    genenrate 1d Gaussian Mixture samples
+    generate 1d Gaussian Mixture samples
     argements:
         ws -- weights of Bernoulli, tensor with shape [N]
         mus -- means of each Gaussian, tensor with shape [N]
@@ -103,9 +106,9 @@ stds_z = torch.tensor([1.0])
 # mus_x = torch.tensor([-4,-1,1,4]).float()*2
 # stds_x = torch.ones(4)*0.01
 
-ws_x = torch.ones(1).float()
-mus_x = torch.tensor([4]).float()
-stds_x = torch.ones(1).float() * 0.3
+# ws_x = torch.ones(1).float()
+# mus_x = torch.tensor([4]).float()
+# stds_x = torch.ones(1).float() * 0.3
 
 ws_x = torch.ones(2).float()
 mus_x = torch.tensor([-4, 4]).float()
@@ -142,7 +145,7 @@ for epoch in tqdm(range(epochs)):
     label_real = torch.ones(batch_size, 1).to(device)
     label_fake = torch.zeros(batch_size, 1).to(device)
     # optimize D multiple times
-    for _ in range(20):
+    for _ in range(5):
         optimizerD.zero_grad()
         D_real = D(real)
         D_fake_1 = D(G(z))
@@ -152,7 +155,7 @@ for epoch in tqdm(range(epochs)):
 
     z = sample_GM_1d(ws_z, mus_z, stds_z, batch_size).to(device)
     # optimize G multiple times
-    for _ in range(20):
+    for _ in range(1):
         optimizerG.zero_grad()
         fake = G(z)
         D_fake_2 = D(fake)
@@ -170,9 +173,9 @@ for epoch in tqdm(range(epochs)):
         Gz_ = G(grid_z.to(device)).detach().cpu().numpy()
 
         ax = plt.subplot(221)
-        plt.hist(z_fix.squeeze().numpy(), alpha=0.5, label='z', \
+        plt.hist(z_fix.squeeze().numpy(), alpha=0.5, label='distrib(z)', \
         bins=20, density=True)
-        plt.hist(Gz_dist, alpha=0.5, label='G(z)', \
+        plt.hist(Gz_dist, alpha=0.5, label='distrib(G(z))', \
         bins=20, density=True)
         plt.hist(real_fix.squeeze().numpy(), alpha=0.5, label='real',\
         bins=20, density=True)
@@ -193,7 +196,7 @@ for epoch in tqdm(range(epochs)):
         plt.legend()
         
         plt.pause(0.2)
-        plt.savefig('outputs/e{}.jpg'.format(epoch))
+        plt.savefig(os.path.join(save_dir, 'e{}.jpg'.format(epoch)))
         plt.clf()
 
 plt.close()
