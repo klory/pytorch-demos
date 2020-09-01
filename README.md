@@ -2,4 +2,4 @@
 
 Some short PyTorch Implementations
 
-## PyTorch 0.4.1
+## PyTorch 1.6
