@@ -1,0 +1,9 @@
+.vscode/
+data/
+checkpoints/
+runs/
+__pycache__/
+*DS_Store
+*.pyc
+.*.py
+.*.txt
